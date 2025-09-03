@@ -28,7 +28,7 @@ jobs:
         id: changed_dirs
         run: |
           files="${{ steps.changed_dockerfiles.outputs.all_changed_files }}"
-          dirs=$(echo "$files" | xargs -n1 dirname | sort -u | jq -R . | jq -s .)
+          dirs=$(echo "$files" | xargs -n1 dirname | sort -u | jq -R . | jq -s -c .)
           echo "dirs=$dirs" >> "$GITHUB_OUTPUT"
 
   build-matrix:
