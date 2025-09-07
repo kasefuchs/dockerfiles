@@ -10,3 +10,6 @@ RUN wget -qO /tmp/kyocera_ppds_installer.sh https://raw.githubusercontent.com/mn
     chmod +x /tmp/kyocera_ppds_installer.sh && \
     yes y | /tmp/kyocera_ppds_installer.sh && \
     rm -rf /tmp/*
+
+# Remove debug flags from the shebang.
+RUN sed -i '1 s|^#!/bin/bash.*|#!/bin/bash|' /entrypoint.sh
