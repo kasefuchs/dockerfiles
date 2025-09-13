@@ -19,7 +19,7 @@ jobs:
 
       - name: Get changed Dockerfiles
         id: changed_dockerfiles
-        uses: tj-actions/changed-files@v46
+        uses: tj-actions/changed-files@v47
         with:
           files: |
             */Dockerfile
