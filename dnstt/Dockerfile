@@ -17,8 +17,8 @@ RUN git clone --branch $BRANCH https://www.bamsoftware.com/git/dnstt.git
 
 WORKDIR $GOPATH/src/www.bamsoftware.com/git/dnstt
 
-RUN go build -o /go/bin/dnstt-client ./dnstt-client/
-RUN go build -o /go/bin/dnstt-server ./dnstt-server/
+RUN go build -o $GOPATH/bin/dnstt-client ./dnstt-client/
+RUN go build -o $GOPATH/bin/dnstt-server ./dnstt-server/
 
 FROM alpine:3.22.2
 
@@ -28,3 +28,5 @@ LABEL su.kasefuchs.build.platforms="linux/amd64,linux/arm64"
 
 COPY --from=build /go/bin/dnstt-client /usr/local/bin/dnstt-client
 COPY --from=build /go/bin/dnstt-server /usr/local/bin/dnstt-server
+
+ENTRYPOINT ["/usr/local/bin/dnstt-server"]
