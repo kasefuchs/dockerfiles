@@ -3,8 +3,7 @@
 
 FROM --platform=$BUILDPLATFORM golang:1.25.2 AS build
 
-ARG VERSION=v1.20241021.0
-
+ARG BRANCH=v1.20241021.0
 ARG TARGETOS
 ARG TARGETARCH
 
@@ -12,8 +11,14 @@ ENV GOOS=$TARGETOS
 ENV GOARCH=$TARGETARCH
 ENV CGO_ENABLED=0
 
-RUN go install www.bamsoftware.com/git/dnstt.git/dnstt-client@$VERSION
-RUN go install www.bamsoftware.com/git/dnstt.git/dnstt-server@$VERSION
+WORKDIR $GOPATH/src/www.bamsoftware.com/git
+
+RUN git clone --branch $BRANCH https://www.bamsoftware.com/git/dnstt.git
+
+WORKDIR $GOPATH/src/www.bamsoftware.com/git/dnstt
+
+RUN go build -o /go/bin/dnstt-client ./dnstt-client/
+RUN go build -o /go/bin/dnstt-server ./dnstt-server/
 
 FROM alpine:3.22.2
 
