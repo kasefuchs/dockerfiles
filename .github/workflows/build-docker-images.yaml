@@ -70,10 +70,20 @@ jobs:
       - name: Extract info from Dockerfile
         id: extract
         run: |
+          get_label() {
+            grep "^LABEL su.kasefuchs.build.$1=" "${{ matrix.dir }}/Dockerfile" | awk -F'"' '{print $2}' | head -n1
+          }
+
+          get_tag() {
+            tag=$(get_label tag)
+            [ -z "$tag" ] && tag=$(grep '^FROM' "${{ matrix.dir }}/Dockerfile" | head -n1 | awk -F'[:@]' '{print $2}')
+            echo "$tag"
+          }
+
           {
-            echo "tag=$(grep '^FROM' "${{ matrix.dir }}/Dockerfile" | head -n1 | awk -F'[:@]' '{print $2}')"
-            echo "image=$(grep '^LABEL su.kasefuchs.build.image' "${{ matrix.dir }}/Dockerfile" | head -n1 | awk -F'"' '{print $2}')"
-            echo "platforms=$(grep '^LABEL su.kasefuchs.build.platforms' "${{ matrix.dir }}/Dockerfile" | head -n1 | awk -F'"' '{print $2}')"
+            echo "tag=$(get_tag)"
+            echo "image=$(get_label image)"
+            echo "platforms=$(get_label platforms)"
           } >> "$GITHUB_OUTPUT"
 
       - name: Extract metadata (tags, labels) for Docker
