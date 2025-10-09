@@ -4,7 +4,6 @@ name: Build Docker images
 on:
   push:
     branches: [main]
-    paths: ["*/Dockerfile"]
 
 jobs:
   define-matrix:
@@ -17,18 +16,28 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Get changed Dockerfiles
-        id: changed_dockerfiles
+      - name: Get changed files
+        id: changed_files
         uses: tj-actions/changed-files@v47
-        with:
-          files: |
-            */Dockerfile
 
-      - name: Get directory names of changed Dockerfiles
+      - name: Get changed directories
         id: changed_dirs
         run: |
-          files="${{ steps.changed_dockerfiles.outputs.all_changed_files }}"
-          dirs=$(echo "$files" | xargs -n1 dirname | sort -u | jq -R . | jq -s -c .)
+          files="${{ steps.changed_files.outputs.all_changed_files }}"
+          dirs=""
+
+          for f in $files; do
+            dir=$(dirname "$f")
+            while [ "$dir" != "." ] && [ "$dir" != "/" ]; do
+              if [ -f "$dir/Dockerfile" ]; then
+                dirs="$dirs $dir"
+                break
+              fi
+              dir=$(dirname "$dir")
+            done
+          done
+
+          dirs=$(echo "$dirs" | xargs -n1 | sort -u | jq -R . | jq -s -c .)
           echo "dirs=$dirs" >> "$GITHUB_OUTPUT"
 
   build-matrix:
@@ -63,6 +72,7 @@ jobs:
         run: |
           {
             echo "tag=$(grep '^FROM' "${{ matrix.dir }}/Dockerfile" | head -n1 | awk -F'[:@]' '{print $2}')"
+            echo "image=$(grep '^LABEL su.kasefuchs.build.image' "${{ matrix.dir }}/Dockerfile" | head -n1 | awk -F'"' '{print $2}')"
             echo "platforms=$(grep '^LABEL su.kasefuchs.build.platforms' "${{ matrix.dir }}/Dockerfile" | head -n1 | awk -F'"' '{print $2}')"
           } >> "$GITHUB_OUTPUT"
 
@@ -70,7 +80,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.actor }}/${{ matrix.dir }}
+          images: ghcr.io/${{ github.actor }}/${{ steps.extract.outputs.image }}
           tags: |
             type=raw,value=latest
             type=raw,value=${{ steps.extract.outputs.tag }}
