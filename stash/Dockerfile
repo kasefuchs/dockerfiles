@@ -12,5 +12,5 @@ COPY rootfs/ /
 
 ENV STASH_CONFIG_FILE=/decrypted/config.yaml
 
-ENTRYPOINT [ "/usr/bin/supervisord" ]
-CMD [ "--configuration", "/etc/supervisord.conf" ]
+ENTRYPOINT ["/usr/bin/supervisord"]
+CMD ["--configuration", "/etc/supervisord.conf"]
