@@ -6,11 +6,13 @@ FROM stashapp/stash:v0.29.1
 LABEL su.kasefuchs.build.image="stash"
 LABEL su.kasefuchs.build.platforms="linux/amd64,linux/arm64"
 
-RUN apk --no-cache add gallery-dl gocryptfs supervisor
+RUN apk --no-cache add gallery-dl gocryptfs
+
+COPY --from=ghcr.io/kasefuchs/pebble:v1.25.0 /usr/local/bin/pebble /usr/local/bin/pebble
 
 COPY rootfs/ /
 
 ENV STASH_CONFIG_FILE=/decrypted/config.yaml
 
-ENTRYPOINT ["/usr/bin/supervisord"]
-CMD ["--configuration", "/etc/supervisord.conf"]
+ENTRYPOINT ["/usr/local/bin/pebble"]
+CMD ["run"]

@@ -1,0 +1,13 @@
+# Copyright (c) Kasefuchs
+# SPDX-License-Identifier: MIT
+
+---
+services:
+  stash:
+    command: /usr/local/bin/stash-start.sh
+    override: replace
+    startup: enabled
+    group: root
+    user: root
+    after: [gocryptfs]
+    requires: [gocryptfs]
