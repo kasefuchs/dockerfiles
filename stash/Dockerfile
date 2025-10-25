@@ -6,8 +6,7 @@ FROM stashapp/stash:v0.29.1
 LABEL su.kasefuchs.build.image="stash"
 LABEL su.kasefuchs.build.platforms="linux/amd64,linux/arm64"
 
-RUN apk --no-cache add gocryptfs supervisor && \
-  pip install --break-system-packages gallery-dl
+RUN apk --no-cache add gallery-dl gocryptfs supervisor
 
 COPY rootfs/ /
 
