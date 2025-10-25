@@ -1,0 +1,11 @@
+# Copyright (c) Kasefuchs
+# SPDX-License-Identifier: MIT
+
+---
+services:
+  gocryptfs:
+    command: /usr/local/bin/gocryptfs-start.sh
+    override: replace
+    startup: enabled
+    group: root
+    user: root
