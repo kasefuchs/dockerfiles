@@ -6,4 +6,4 @@ set -eu
 
 GOCRYPTFS_MOUNT_PATH="${GOCRYPTFS_MOUNT_PATH:-/decrypted}"
 
-mountpoint -q "$GOCRYPTFS_MOUNT_PATH"
+exec mountpoint -q "$GOCRYPTFS_MOUNT_PATH"
