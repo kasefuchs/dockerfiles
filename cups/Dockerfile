@@ -1,7 +1,7 @@
 # Copyright (c) Kasefuchs
 # SPDX-License-Identifier: MIT
 
-FROM anujdatar/cups:25.10.01
+FROM anujdatar/cups:25.11.01
 
 LABEL su.kasefuchs.build.image="cups"
 LABEL su.kasefuchs.build.platforms="linux/amd64"
