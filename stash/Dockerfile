@@ -1,6 +1,3 @@
-# Copyright (c) Kasefuchs
-# SPDX-License-Identifier: MIT
-
 FROM stashapp/stash:v0.29.3
 
 LABEL su.kasefuchs.build.image="stash"

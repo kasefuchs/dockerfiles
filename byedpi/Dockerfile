@@ -1,6 +1,3 @@
-# Copyright (c) Kasefuchs
-# SPDX-License-Identifier: MIT
-
 FROM tazihad/byedpi:v0.17.3
 
 LABEL su.kasefuchs.build.image="byedpi"
