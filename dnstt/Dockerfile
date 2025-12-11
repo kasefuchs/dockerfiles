@@ -1,6 +1,3 @@
-# Copyright (c) Kasefuchs
-# SPDX-License-Identifier: MIT
-
 FROM --platform=$BUILDPLATFORM golang:1.25.4 AS build
 
 ARG BRANCH=v1.20241021.0

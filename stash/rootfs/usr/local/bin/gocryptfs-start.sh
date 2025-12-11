@@ -1,7 +1,4 @@
 #!/bin/sh
-# Copyright (c) Kasefuchs
-# SPDX-License-Identifier: MIT
-
 set -eu
 
 GOCRYPTFS_ENCRYPTED_PATH="${GOCRYPTFS_ENCRYPTED_PATH:-/encrypted}"
