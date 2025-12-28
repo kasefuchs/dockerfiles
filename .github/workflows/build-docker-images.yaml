@@ -71,7 +71,7 @@ jobs:
         id: extract
         run: |
           get_label() {
-            grep "^LABEL su.kasefuchs.build.$1=" "${{ matrix.dir }}/Dockerfile" | awk -F'"' '{print $2}' | head -n1
+            grep "^LABEL net.kasefuchs.build.$1=" "${{ matrix.dir }}/Dockerfile" | awk -F'"' '{print $2}' | head -n1
           }
 
           get_tag() {

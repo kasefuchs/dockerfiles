@@ -1,7 +1,7 @@
 FROM stashapp/stash:v0.29.3
 
-LABEL su.kasefuchs.build.image="stash"
-LABEL su.kasefuchs.build.platforms="linux/amd64,linux/arm64"
+LABEL net.kasefuchs.build.image="stash"
+LABEL net.kasefuchs.build.platforms="linux/amd64,linux/arm64"
 
 RUN apk --no-cache add gallery-dl gocryptfs
 

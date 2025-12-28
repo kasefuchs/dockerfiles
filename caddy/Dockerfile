@@ -5,8 +5,8 @@ RUN xcaddy build \
 
 FROM caddy:2.10.2
 
-LABEL su.kasefuchs.build.tag="2.10.2"
-LABEL su.kasefuchs.build.image="caddy"
-LABEL su.kasefuchs.build.platforms="linux/amd64,linux/arm64"
+LABEL net.kasefuchs.build.tag="2.10.2"
+LABEL net.kasefuchs.build.image="caddy"
+LABEL net.kasefuchs.build.platforms="linux/amd64,linux/arm64"
 
 COPY --from=build /usr/bin/caddy /usr/bin/caddy
