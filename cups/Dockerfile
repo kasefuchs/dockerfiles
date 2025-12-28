@@ -1,7 +1,7 @@
 FROM anujdatar/cups:25.11.01
 
-LABEL su.kasefuchs.build.image="cups"
-LABEL su.kasefuchs.build.platforms="linux/amd64"
+LABEL net.kasefuchs.build.image="cups"
+LABEL net.kasefuchs.build.platforms="linux/amd64"
 
 # Install Kyocera printer drivers.
 RUN wget -qO /tmp/kyocera_ppds_installer.sh https://raw.githubusercontent.com/mnorin/kyocera-ppd-installer/refs/heads/master/kyocera_ppds_installer.sh && \

@@ -18,9 +18,9 @@ RUN go build -o $GOPATH/bin/pebble ./cmd/pebble/
 
 FROM alpine:3.22.2
 
-LABEL su.kasefuchs.build.tag="v1.25.0"
-LABEL su.kasefuchs.build.image="pebble"
-LABEL su.kasefuchs.build.platforms="linux/amd64,linux/arm64"
+LABEL net.kasefuchs.build.tag="v1.25.0"
+LABEL net.kasefuchs.build.image="pebble"
+LABEL net.kasefuchs.build.platforms="linux/amd64,linux/arm64"
 
 COPY --from=build /go/bin/pebble /usr/local/bin/pebble
 
