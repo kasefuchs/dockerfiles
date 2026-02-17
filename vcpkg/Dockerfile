@@ -9,7 +9,7 @@ LABEL net.kasefuchs.build.platforms="linux/amd64,linux/arm64"
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update --assume-yes && \
-    apt-get install --assume-yes --no-install-recommends ca-certificates clang cmake curl git ninja-build tar unzip zip && \
+    apt-get install --assume-yes --no-install-recommends ca-certificates clang cmake curl dpkg-dev file git pkg-config ninja-build tar unzip zip && \
     apt-get clean --assume-yes
 
 ENV VCPKG_ROOT=/opt/vcpkg
