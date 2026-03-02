@@ -1,0 +1,8 @@
+---
+services:
+  rinetd:
+    command: /usr/sbin/rinetd -f
+    override: replace
+    startup: enabled
+    group: root
+    user: root
