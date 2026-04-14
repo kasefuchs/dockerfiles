@@ -1,6 +1,6 @@
-FROM --platform=$BUILDPLATFORM golang:1.25.4 AS build
+FROM --platform=$BUILDPLATFORM golang:1.25.5 AS build
 
-ARG BRANCH=v1.4.2
+ARG BRANCH=v2.0.1
 ARG TARGETOS
 ARG TARGETARCH
 
@@ -18,9 +18,12 @@ RUN go build -o $GOPATH/bin/usque .
 
 FROM alpine:3.22.2
 
-LABEL net.kasefuchs.build.tag="v1.4.2"
+LABEL net.kasefuchs.build.tag="v2.0.1"
 LABEL net.kasefuchs.build.image="usque"
 LABEL net.kasefuchs.build.platforms="linux/amd64,linux/arm64"
+
+# Install curl for health checks.
+RUN apk --no-cache add curl
 
 COPY --from=build /go/bin/usque /usr/local/bin/usque
 
