@@ -1,13 +1,17 @@
-name: Build Docker images
+name: Build Docker Images
 on:
   push:
     branches: [main]
-    paths: [apps/**]
+    paths:
+      - apps/**
+      - base/**
+      - .github/workflows/build-docker-images.yaml
 jobs:
   define-matrix:
     runs-on: ubuntu-latest
     outputs:
-      changed_dirs: ${{ steps.changed_dirs.outputs.dirs }}
+      base_dirs: ${{ steps.changed_dirs.outputs.base }}
+      apps_dirs: ${{ steps.changed_dirs.outputs.apps }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -17,33 +21,42 @@ jobs:
         id: changed_files
         uses: tj-actions/changed-files@v47
         with:
-          files: apps/**
+          files: |
+            apps/**
+            base/**
       - name: Get changed directories
         id: changed_dirs
         run: |
           files="${{ steps.changed_files.outputs.all_changed_files }}"
-          dirs=""
+          base_dirs=""
+          apps_dirs=""
 
           for f in $files; do
+            category=$(echo "$f" | cut -d/ -f1)
             dir=$(echo "$f" | cut -d/ -f1,2)
 
             if [ -f "$dir/Dockerfile" ]; then
-              dirs="$dirs $dir"
+              if [ "$category" == "base" ]; then
+                base_dirs="$base_dirs $dir"
+              elif [ "$category" == "apps" ]; then
+                apps_dirs="$apps_dirs $dir"
+              fi
             fi
           done
 
-          dirs=$(echo "$dirs" | xargs -n1 | sort -u | jq -R . | jq -s -c .)
-          echo "dirs=$dirs" >> "$GITHUB_OUTPUT"
-  build-matrix:
-    runs-on: ubuntu-latest
+          echo "base=$(echo "$base_dirs" | xargs -n1 | sort -u | jq -R . | jq -s -c . || echo '[]')" >> "$GITHUB_OUTPUT"
+          echo "apps=$(echo "$apps_dirs" | xargs -n1 | sort -u | jq -R . | jq -s -c . || echo '[]')" >> "$GITHUB_OUTPUT"
+  build-base:
     needs: define-matrix
+    runs-on: ubuntu-latest
+    if: fromJSON(needs.define-matrix.outputs.base_dirs)[0] != null
     strategy:
+      fail-fast: false
       matrix:
-        dir: ${{ fromJSON(needs.define-matrix.outputs.changed_dirs) }}
+        dir: ${{ fromJSON(needs.define-matrix.outputs.base_dirs) }}
     permissions:
       contents: read
       packages: write
-      id-token: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -51,31 +64,26 @@ jobs:
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      - name: Log in to the Container registry
+      - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Extract info from Dockerfile
+      - name: Extract Metadata
         id: extract
         run: |
           get_label() {
             grep "^LABEL net.kasefuchs.build.$1=" "${{ matrix.dir }}/Dockerfile" | awk -F'"' '{print $2}' | head -n1
           }
 
-          get_tag() {
-            tag=$(get_label tag)
-            [ -z "$tag" ] && tag=$(grep '^FROM' "${{ matrix.dir }}/Dockerfile" | head -n1 | awk -F'[:@]' '{print $2}')
-            echo "$tag"
-          }
+          tag=$(get_label tag)
+          [ -z "$tag" ] && tag=$(grep '^FROM' "${{ matrix.dir }}/Dockerfile" | head -n1 | awk -F'[:@]' '{print $2}')
 
-          {
-            echo "tag=$(get_tag)"
-            echo "image=$(get_label image)"
-            echo "platforms=$(get_label platforms)"
-          } >> "$GITHUB_OUTPUT"
-      - name: Extract metadata (tags, labels) for Docker
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "image=$(get_label image)" >> "$GITHUB_OUTPUT"
+          echo "platforms=$(get_label platforms)" >> "$GITHUB_OUTPUT"
+      - name: Docker Metadata Action
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -83,12 +91,67 @@ jobs:
           tags: |
             type=raw,value=latest
             type=raw,value=${{ steps.extract.outputs.tag }}
-      - name: Build and push Docker image
-        id: push
+      - name: Build and Push Base
         uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.dir }}
-          file: ${{ matrix.dir }}/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: ${{ steps.extract.outputs.platforms }}
+  build-apps:
+    needs: [define-matrix, build-base]
+    runs-on: ubuntu-latest
+    if: |
+      always() &&
+      needs.define-matrix.result == 'success' &&
+      (needs.build-base.result == 'success' || needs.build-base.result == 'skipped') &&
+      fromJSON(needs.define-matrix.outputs.apps_dirs)[0] != null
+    strategy:
+      fail-fast: false
+      matrix:
+        dir: ${{ fromJSON(needs.define-matrix.outputs.apps_dirs) }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract Metadata
+        id: extract
+        run: |
+          get_label() {
+            grep "^LABEL net.kasefuchs.build.$1=" "${{ matrix.dir }}/Dockerfile" | awk -F'"' '{print $2}' | head -n1
+          }
+
+          tag=$(get_label tag)
+          [ -z "$tag" ] && tag=$(grep '^FROM' "${{ matrix.dir }}/Dockerfile" | head -n1 | awk -F'[:@]' '{print $2}')
+
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "image=$(get_label image)" >> "$GITHUB_OUTPUT"
+          echo "platforms=$(get_label platforms)" >> "$GITHUB_OUTPUT"
+      - name: Docker Metadata Action
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.actor }}/containers/${{ steps.extract.outputs.image }}
+          tags: |
+            type=raw,value=latest
+            type=raw,value=${{ steps.extract.outputs.tag }}
+      - name: Build and Push App
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.dir }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

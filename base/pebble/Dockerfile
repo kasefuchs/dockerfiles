@@ -1,6 +1,6 @@
-FROM --platform=$BUILDPLATFORM golang:1.25.4 AS build
+FROM --platform=$BUILDPLATFORM golang:1.26.1 AS build
 
-ARG BRANCH=v1.25.0
+ARG BRANCH=v1.30.1
 ARG TARGETOS
 ARG TARGETARCH
 
@@ -18,7 +18,7 @@ RUN go build -o $GOPATH/bin/pebble ./cmd/pebble/
 
 FROM alpine:3.22.2
 
-LABEL net.kasefuchs.build.tag="v1.25.0"
+LABEL net.kasefuchs.build.tag="v1.30.1"
 LABEL net.kasefuchs.build.image="pebble"
 LABEL net.kasefuchs.build.platforms="linux/amd64,linux/arm64"
 

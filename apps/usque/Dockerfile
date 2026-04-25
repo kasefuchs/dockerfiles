@@ -1,6 +1,6 @@
 FROM --platform=$BUILDPLATFORM golang:1.25.5 AS build
 
-ARG BRANCH=v2.0.1
+ARG BRANCH=v3.0.0
 ARG TARGETOS
 ARG TARGETARCH
 
@@ -18,7 +18,7 @@ RUN go build -o $GOPATH/bin/usque .
 
 FROM alpine:3.22.2
 
-LABEL net.kasefuchs.build.tag="v2.0.1"
+LABEL net.kasefuchs.build.tag="v3.0.0"
 LABEL net.kasefuchs.build.image="usque"
 LABEL net.kasefuchs.build.platforms="linux/amd64,linux/arm64"
 
