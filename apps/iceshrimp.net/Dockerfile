@@ -1,4 +1,4 @@
-FROM iceshrimp.dev/iceshrimp/dotnet-sdk:10.0-alpine AS build
+FROM --platform=$BUILDPLATFORM iceshrimp.dev/iceshrimp/dotnet-sdk:10.0-alpine AS build
 
 ARG BRANCH=main
 
