@@ -1,4 +1,3 @@
----
 services:
   gocryptfs:
     command: /usr/local/bin/gocryptfs-start.sh

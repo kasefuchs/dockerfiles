@@ -1,4 +1,3 @@
----
 services:
   stash:
     command: /usr/local/bin/stash-start.sh
