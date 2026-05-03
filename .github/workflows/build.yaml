@@ -3,156 +3,32 @@ on:
   push:
     branches: [main]
     paths:
-      - apps/**
-      - base/**
+      - "*.hcl"
+      - images/**/*
       - .github/workflows/build-docker-images.yaml
 jobs:
-  define-matrix:
+  build-push:
     runs-on: ubuntu-latest
-    outputs:
-      base_dirs: ${{ steps.changed_dirs.outputs.base }}
-      apps_dirs: ${{ steps.changed_dirs.outputs.apps }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
         with:
-          fetch-depth: 2
-      - name: Get changed files
-        id: changed_files
-        uses: tj-actions/changed-files@v47
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and Push
+        uses: docker/bake-action@v5
         with:
+          push: true
+          set: |
+            *.cache-from=type=gha
+            *.cache-to=type=gha,mode=max
           files: |
-            apps/**
-            base/**
-      - name: Get changed directories
-        id: changed_dirs
-        run: |
-          files="${{ steps.changed_files.outputs.all_changed_files }}"
-          base_dirs=""
-          apps_dirs=""
-
-          for f in $files; do
-            category=$(echo "$f" | cut -d/ -f1)
-            dir=$(echo "$f" | cut -d/ -f1,2)
-
-            if [ -f "$dir/Dockerfile" ]; then
-              if [ "$category" == "base" ]; then
-                base_dirs="$base_dirs $dir"
-              elif [ "$category" == "apps" ]; then
-                apps_dirs="$apps_dirs $dir"
-              fi
-            fi
-          done
-
-          echo "base=$(echo "$base_dirs" | xargs -n1 | sort -u | jq -R . | jq -s -c . || echo '[]')" >> "$GITHUB_OUTPUT"
-          echo "apps=$(echo "$apps_dirs" | xargs -n1 | sort -u | jq -R . | jq -s -c . || echo '[]')" >> "$GITHUB_OUTPUT"
-  build-base:
-    needs: define-matrix
-    runs-on: ubuntu-latest
-    if: fromJSON(needs.define-matrix.outputs.base_dirs)[0] != null
-    strategy:
-      fail-fast: false
-      matrix:
-        dir: ${{ fromJSON(needs.define-matrix.outputs.base_dirs) }}
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Extract Metadata
-        id: extract
-        run: |
-          get_label() {
-            grep "^LABEL net.kasefuchs.build.$1=" "${{ matrix.dir }}/Dockerfile" | awk -F'"' '{print $2}' | head -n1
-          }
-
-          tag=$(get_label tag)
-          [ -z "$tag" ] && tag=$(grep '^FROM' "${{ matrix.dir }}/Dockerfile" | head -n1 | awk -F'[:@]' '{print $2}')
-
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          echo "image=$(get_label image)" >> "$GITHUB_OUTPUT"
-          echo "platforms=$(get_label platforms)" >> "$GITHUB_OUTPUT"
-      - name: Docker Metadata Action
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.actor }}/containers/${{ steps.extract.outputs.image }}
-          tags: |
-            type=raw,value=latest
-            type=raw,value=${{ steps.extract.outputs.tag }}
-      - name: Build and Push Base
-        uses: docker/build-push-action@v6
-        with:
-          context: ${{ matrix.dir }}
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          platforms: ${{ steps.extract.outputs.platforms }}
-  build-apps:
-    needs: [define-matrix, build-base]
-    runs-on: ubuntu-latest
-    if: |
-      always() &&
-      needs.define-matrix.result == 'success' &&
-      (needs.build-base.result == 'success' || needs.build-base.result == 'skipped') &&
-      fromJSON(needs.define-matrix.outputs.apps_dirs)[0] != null
-    strategy:
-      fail-fast: false
-      matrix:
-        dir: ${{ fromJSON(needs.define-matrix.outputs.apps_dirs) }}
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Extract Metadata
-        id: extract
-        run: |
-          get_label() {
-            grep "^LABEL net.kasefuchs.build.$1=" "${{ matrix.dir }}/Dockerfile" | awk -F'"' '{print $2}' | head -n1
-          }
-
-          tag=$(get_label tag)
-          [ -z "$tag" ] && tag=$(grep '^FROM' "${{ matrix.dir }}/Dockerfile" | head -n1 | awk -F'[:@]' '{print $2}')
-
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          echo "image=$(get_label image)" >> "$GITHUB_OUTPUT"
-          echo "platforms=$(get_label platforms)" >> "$GITHUB_OUTPUT"
-      - name: Docker Metadata Action
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.actor }}/containers/${{ steps.extract.outputs.image }}
-          tags: |
-            type=raw,value=latest
-            type=raw,value=${{ steps.extract.outputs.tag }}
-      - name: Build and Push App
-        uses: docker/build-push-action@v6
-        with:
-          context: ${{ matrix.dir }}
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          platforms: ${{ steps.extract.outputs.platforms }}
+            targets.hcl
+            versions.hcl
